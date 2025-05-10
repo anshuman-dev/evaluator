@@ -429,25 +429,6 @@ def project_details(project_id):
         return jsonify({'error': str(e)})
 
 @app.route('/project/<int:project_id>/details')
-def project_details(project_id):
-    project = Project.query.get_or_404(project_id)
-    
-    try:
-        if project.evaluation_details:
-            details = json.loads(project.evaluation_details)
-            
-            # Ensure scores exist and convert N/A to 0
-            if 'scores' in details:
-                for key in ['code_quality', 'timeline', 'deployment', 'innovation', 'demo', 'total']:
-                    if key not in details['scores'] or details['scores'][key] == 'N/A':
-                        details['scores'][key] = 0
-            
-            # Add project metadata
-            details['project_name'] = project.name
-            details['project_track'] = project.tracks
-            details['github_link'] = project.github_link
-            details['demo_link'] = project.video_link
-            details['deployed_link'] = project.deployed_link
             
             return jsonify(details)
         else:
