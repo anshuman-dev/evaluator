@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2 class="mb-4">Upload Projects for {{ hackathon.name }}</h2>
+
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <form action="/process_upload/{{ hackathon.id }}" method="POST" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="file" class="form-label">Upload CSV File</label>
+                        <input type="file" class="form-control" id="file" name="file" accept=".csv" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <small class="text-muted">
+                            <a href="/static/sample.csv" download>Download sample CSV format</a>
+                        </small>
+                    </div>
+                    
+                    <p class="text-muted">CSV Format: project_name, devfolio_link, github_link, video_link, tracks (optional), deployed_link (optional)</p>
+                    
+                    <button type="submit" class="btn btn-primary">Upload CSV</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

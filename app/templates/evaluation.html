@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2 class="mb-4">Evaluation Status for {{ hackathon.name }}</h2>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex align-items-center">
+        <span class="fw-bold">Projects: {{ projects|length }}</span>
+        <span class="ms-3">
+            {%- set completed = projects|selectattr('evaluation_status', 'equalto', 'completed')|list|length -%}
+            <span class="badge bg-success">{{ completed }} Completed</span>
+            {%- set evaluating = projects|selectattr('evaluation_status', 'equalto', 'evaluating')|list|length -%}
+            {% if evaluating > 0 %}
+                <span class="badge bg-primary">{{ evaluating }} In Progress</span>
+            {% endif %}
+        </span>
+    </div>
+    
+    {% if completed < projects|length %}
+        <button id="startEvaluation" class="btn btn-success" onclick="startEvaluation({{ hackathon.id }})">
+            Start Evaluation
+        </button>
+    {% else %}
+        <a href="/results/{{ hackathon.id }}" class="btn btn-primary">
+            View Results
+        </a>
+    {% endif %}
+</div>
+
+<div class="table-responsive">
+    <table class="table table-striped table-hover">
+        <thead class="table-dark">
+            <tr>
+                <th>Project Name</th>
+                <th>Status</th>
+                <th>Score</th>
+                <th>Progress</th>
+            </tr>
+        </thead>
+        <tbody id="projectsTable">
+            {% for project in projects %}
+            <tr data-project-id="{{ project.id }}">
+                <td>
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-folder me-2"></i>
+                        <a href="{{ project.devfolio_link }}" target="_blank" class="text-decoration-none">
+                            {{ project.name }}
+                        </a>
+                    </div>
+                </td>
+                <td>
+                    {% if project.evaluation_status == 'completed' %}
+                        <span class="badge bg-success">{{ project.evaluation_status|title }}</span>
+                    {% elif project.evaluation_status == 'evaluating' %}
+                        <span class="badge bg-warning">
+                            <span class="spinner-border spinner-border-sm" role="status"></span>
+                            {{ project.evaluation_status|title }}
+                        </span>
+                    {% elif project.evaluation_status == 'error' %}
+                        <span class="badge bg-danger">{{ project.evaluation_status|title }}</span>
+                    {% else %}
+                        <span class="badge bg-secondary">{{ project.evaluation_status|title }}</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if project.score > 0 %}
+                        <span class="badge bg-{% if project.score >= 80 %}success{% elif project.score >= 60 %}warning{% else %}danger{% endif %} fs-6">
+                            {{ project.score|round(1) }}
+                        </span>
+                    {% else %}
+                        <span class="text-muted">-</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <div class="progress" style="height: 20px;">
+                        {% if project.evaluation_status == 'completed' %}
+                            <div class="progress-bar bg-success" role="progressbar" style="width: 100%"></div>
+                        {% elif project.evaluation_status == 'evaluating' %}
+                            <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 50%"></div>
+                        {% elif project.evaluation_status == 'error' %}
+                            <div class="progress-bar bg-danger" role="progressbar" style="width: 100%"></div>
+                        {% else %}
+                            <div class="progress-bar bg-light" role="progressbar" style="width: 0%"></div>
+                        {% endif %}
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="mt-4 text-center">
+    {% if completed == projects|length and projects|length > 0 %}
+        <a href="/results/{{ hackathon.id }}" class="btn btn-primary btn-lg">
+            <i class="bi bi-bar-chart me-2"></i>View Full Results
+        </a>
+    {% endif %}
+</div>
+
+<script>
+// Auto-refresh logic
+{% if projects|selectattr('evaluation_status', 'equalto', 'evaluating')|list|length > 0 %}
+    setInterval(function() {
+        window.location.reload();
+    }, 3000);
+{% endif %}
+</script>
+
+{% endblock %}

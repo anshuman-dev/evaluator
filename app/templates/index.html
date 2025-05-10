@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="text-center mt-5">
+    <div class="logo-animation">
+        <h1 class="display-1 mb-4">Judge! The Evaluator</h1>
+    </div>
+    
+    <div class="description mb-5">
+        <p class="lead">An AI evaluator which evaluates projects submitted to hackathons based on criteria and weights for unbiased reviews.</p>
+        <p class="text-secondary">Projects putting in actual hard work are recommended to win.</p>
+    </div>
+    
+    <a href="/dashboard" class="btn btn-primary btn-lg px-5">
+        <i class="bi bi-door-open me-2"></i>Enter Dashboard
+    </a>
+    
+    <div class="mt-5 pt-4">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="row g-4">
+                    <div class="col-md-4">
+                        <div class="card h-100 text-center">
+                            <div class="card-body">
+                                <i class="bi bi-upload display-4 text-primary mb-3"></i>
+                                <h5>Upload Projects</h5>
+                                <p class="text-muted small">Easy CSV upload</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card h-100 text-center">
+                            <div class="card-body">
+                                <i class="bi bi-cpu display-4 text-success mb-3"></i>
+                                <h5>AI Evaluation</h5>
+                                <p class="text-muted small">Unbiased scoring</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card h-100 text-center">
+                            <div class="card-body">
+                                <i class="bi bi-trophy display-4 text-warning mb-3"></i>
+                                <h5>Fair Results</h5>
+                                <p class="text-muted small">Detailed feedback</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="mt-5 pt-4">
+        <p class="text-muted">From Devfolio - Where judges are assigned to hackathons</p>
+    </div>
+</div>
+
+<script>
+// Trigger animation on page load
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(function() {
+        document.querySelector('.logo-animation').classList.add('animate');
+    }, 100);
+});
+</script>
+{% endblock %}

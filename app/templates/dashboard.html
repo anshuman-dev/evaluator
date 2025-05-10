@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2 class="mb-4">Hackathons Dashboard</h2>
+
+<div class="row">
+    {% for hackathon in hackathons %}
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">{{ hackathon.name }}</h5>
+                <p class="card-text">
+                    <a href="{{ hackathon.url }}" target="_blank">View Hackathon</a>
+                </p>
+                <a href="/upload/{{ hackathon.id }}" class="btn btn-primary">Start Evaluation</a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
