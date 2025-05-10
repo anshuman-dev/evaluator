@@ -13,8 +13,8 @@
 </div>
 
 <div class="table-responsive">
-    <table class="table table-striped">
-        <thead>
+    <table class="table table-striped table-hover">
+        <thead class="table-dark">
             <tr>
                 <th>#</th>
                 <th>Project Name</th>
@@ -28,16 +28,24 @@
             <tr>
                 <td>{{ loop.index }}</td>
                 <td>
-                    <a href="{{ project.devfolio_link }}" target="_blank">{{ project.name }}</a>
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-folder me-2"></i>
+                        <div>
+                            <a href="{{ project.devfolio_link }}" target="_blank" class="text-decoration-none fw-bold">{{ project.name }}</a>
+                            {% if project.tracks %}
+                                <br><small class="text-muted">{{ project.tracks }}</small>
+                            {% endif %}
+                        </div>
+                    </div>
                 </td>
                 <td>
-                    <span class="badge bg-{% if project.score >= 80 %}success{% elif project.score >= 60 %}warning{% else %}danger{% endif %}">
+                    <span class="badge bg-{% if project.score >= 80 %}success{% elif project.score >= 60 %}warning{% else %}danger{% endif %} fs-6">
                         {{ project.score|round(1) }}
                     </span>
                 </td>
-                <td>{{ project.evaluation_status }}</td>
+                <td>{{ project.evaluation_status|title }}</td>
                 <td>
-                    <button class="btn btn-sm btn-info" onclick="showDetails('{{ project.evaluation_details|replace('\n', '\\n')|replace('"', '\\"') }}')">View</button>
+                    <button class="btn btn-sm btn-info" onclick="showDetails('{{ project.id }}')">View Details</button>
                 </td>
             </tr>
             {% endfor %}
@@ -45,6 +53,7 @@
     </table>
 </div>
 
+<!-- Modal for evaluation details -->
 <div class="modal fade" id="detailsModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -52,15 +61,101 @@
                 <h5 class="modal-title">Evaluation Details</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body" id="modalBody"></div>
+            <div class="modal-body" id="modalBody">
+                <div class="text-center">
+                    <div class="spinner-border" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
 <script>
-function showDetails(details) {
-    document.getElementById('modalBody').innerHTML = '<pre>' + details + '</pre>';
-    new bootstrap.Modal(document.getElementById('detailsModal')).show();
+function showDetails(projectId) {
+    const modal = new bootstrap.Modal(document.getElementById('detailsModal'));
+    modal.show();
+    
+    // Fetch project details
+    fetch(`/project/${projectId}/details`)
+        .then(response => response.json())
+        .then(data => {
+            let html = '';
+            
+            if (data.error) {
+                html = `<div class="alert alert-danger">Error: ${data.error}</div>`;
+            } else {
+                // Show score breakdown
+                html += '<div class="mb-4">';
+                html += '<h6>Score Breakdown:</h6>';
+                html += '<div class="row">';
+                
+                if (data.scores) {
+                    const criteria = [
+                        {key: 'code_quality', name: 'Code Quality', max: 25},
+                        {key: 'timeline', name: 'Timeline Compliance', max: 15},
+                        {key: 'deployment', name: 'Deployment', max: 15},
+                        {key: 'innovation', name: 'Innovation', max: 25},
+                        {key: 'demo', name: 'Demo Quality', max: 20}
+                    ];
+                    
+                    criteria.forEach(c => {
+                        if (data.scores[c.key] !== undefined) {
+                            html += `
+                                <div class="col-md-4 mb-3">
+                                    <div class="card">
+                                        <div class="card-body text-center">
+                                            <h6>${c.name}</h6>
+                                            <h4>${data.scores[c.key]}/${c.max}</h4>
+                                            <div class="progress">
+                                                <div class="progress-bar" style="width: ${(data.scores[c.key]/c.max)*100}%"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        }
+                    });
+                }
+                
+                html += '</div></div>';
+                
+                // Show GitHub info if available
+                if (data.github_info) {
+                    html += '<div class="mb-4">';
+                    html += '<h6>GitHub Analysis:</h6>';
+                    html += '<ul class="list-group">';
+                    html += `<li class="list-group-item d-flex justify-content-between align-items-center">
+                        Language
+                        <span class="badge bg-primary rounded-pill">${data.github_info.language || 'N/A'}</span>
+                    </li>`;
+                    html += `<li class="list-group-item d-flex justify-content-between align-items-center">
+                        Recent Commits (during hackathon)
+                        <span class="badge bg-success rounded-pill">${data.github_info.recent_commits || 0}</span>
+                    </li>`;
+                    html += `<li class="list-group-item d-flex justify-content-between align-items-center">
+                        README
+                        <span class="badge bg-${data.github_info.has_readme ? 'success' : 'danger'} rounded-pill">${data.github_info.has_readme ? 'Yes' : 'No'}</span>
+                    </li>`;
+                    html += '</ul>';
+                    html += '</div>';
+                }
+                
+                // Show full evaluation
+                if (data.full_evaluation) {
+                    html += '<div class="mb-4">';
+                    html += '<h6>Detailed Evaluation:</h6>';
+                    html += `<div class="alert alert-light">${data.full_evaluation.replace(/\n/g, '<br>')}</div>`;
+                    html += '</div>';
+                }
+            }
+            
+            document.getElementById('modalBody').innerHTML = html;
+        })
+        .catch(error => {
+            document.getElementById('modalBody').innerHTML = `<div class="alert alert-danger">Error loading details: ${error}</div>`;
+        });
 }
 </script>
 {% endblock %}
