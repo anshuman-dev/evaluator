@@ -10,6 +10,7 @@ import threading
 from dotenv import load_dotenv
 import re
 from urllib.parse import urlparse
+import app.extract_github as github_extractor
 import time
 import hashlib
 
@@ -145,48 +146,9 @@ def evaluation_status(hackathon_id):
     project_data = []
     for project in projects:
         current_task = '-'
-        if project.evaluation_details:
-            try:
-                details = json.loads(project.evaluation_details)
-                current_task = details.get('current_task', '-')
-            except:
-                pass
-        
-        project_data.append({
-            'id': project.id,
-            'current_task': current_task,
-            'status_html': get_status_html(project.evaluation_status),
-            'score': project.score,
-            'progress_html': get_progress_html(project.evaluation_status, project.score)
-        })
-    
-    return jsonify({
-        'completed': progress['completed'],
-        'total': progress['total'],
-        'current_task': progress['current_task'],
-        'current_project': progress['current_project'],
-        'projects': project_data
-    })
-
-def get_status_html(status):
-    if status == 'completed':
-        return '<span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Completed</span>'
-    elif status == 'evaluating':
-        return '<span class="badge bg-warning"><span class="spinner-border spinner-border-sm me-1" role="status"></span>Evaluating</span>'
-    elif status == 'error':
-        return '<span class="badge bg-danger"><i class="bi bi-exclamation-circle me-1"></i>Error</span>'
-    else:
-        return '<span class="badge bg-secondary">Pending</span>'
-
-def get_progress_html(status, score):
-    if status == 'completed':
-        return f'<div class="progress" style="height: 20px;"><div class="progress-bar bg-success" role="progressbar" style="width: 100%">100%</div></div>'
-    elif status == 'evaluating':
-        return f'<div class="progress" style="height: 20px;"><div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 50%">50%</div></div>'
-    elif status == 'error':
-        return f'<div class="progress" style="height: 20px;"><div class="progress-bar bg-danger" role="progressbar" style="width: 100%">Error</div></div>'
-    else:
-        return f'<div class="progress" style="height: 20px;"><div class="progress-bar bg-light" role="progressbar" style="width: 0%">0%</div></div>'
+def extract_github_info(github_url):
+    """Extract repository information from GitHub URL"""
+    return github_extractor.extract_github_info(github_url)
 
 def create_consistent_prompt(project, github_info, task_description):
     """Create a consistent prompt that should yield similar results"""
@@ -459,6 +421,33 @@ def project_details(project_id):
                 for key in ['code_quality', 'timeline', 'deployment', 'innovation', 'demo', 'total']:
                     if key not in details['scores'] or details['scores'][key] == 'N/A':
                         details['scores'][key] = 0
+            
+            return jsonify(details)
+        else:
+            return jsonify({'error': 'No evaluation details available'})
+    except Exception as e:
+        return jsonify({'error': str(e)})
+
+@app.route('/project/<int:project_id>/details')
+def project_details(project_id):
+    project = Project.query.get_or_404(project_id)
+    
+    try:
+        if project.evaluation_details:
+            details = json.loads(project.evaluation_details)
+            
+            # Ensure scores exist and convert N/A to 0
+            if 'scores' in details:
+                for key in ['code_quality', 'timeline', 'deployment', 'innovation', 'demo', 'total']:
+                    if key not in details['scores'] or details['scores'][key] == 'N/A':
+                        details['scores'][key] = 0
+            
+            # Add project metadata
+            details['project_name'] = project.name
+            details['project_track'] = project.tracks
+            details['github_link'] = project.github_link
+            details['demo_link'] = project.video_link
+            details['deployed_link'] = project.deployed_link
             
             return jsonify(details)
         else:

@@ -45,7 +45,9 @@
                 </td>
                 <td>{{ project.evaluation_status|title }}</td>
                 <td>
-                    <button class="btn btn-sm btn-info" onclick="showDetails('{{ project.id }}')">View Details</button>
+                    <button class="btn btn-sm btn-info" onclick="showDetails('{{ project.id }}')">
+                        <i class="bi bi-eye me-1"></i>View Details
+                    </button>
                 </td>
             </tr>
             {% endfor %}
@@ -55,15 +57,17 @@
 
 <!-- Modal for evaluation details -->
 <div class="modal fade" id="detailsModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog modal-xl">
         <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Evaluation Details</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">
+                    <i class="bi bi-clipboard-data me-2"></i>Evaluation Details
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body" id="modalBody">
+            <div class="modal-body" id="modalBody" style="min-height: 400px;">
                 <div class="text-center">
-                    <div class="spinner-border" role="status">
+                    <div class="spinner-border text-primary" role="status">
                         <span class="visually-hidden">Loading...</span>
                     </div>
                 </div>
@@ -71,6 +75,51 @@
         </div>
     </div>
 </div>
+
+<style>
+.criteria-card {
+    border-radius: 10px;
+    transition: transform 0.2s;
+}
+
+.criteria-card:hover {
+    transform: translateY(-2px);
+}
+
+.progress-circle {
+    position: relative;
+    width: 120px;
+    height: 120px;
+    margin: 0 auto;
+}
+
+.progress-circle svg {
+    transform: rotate(-90deg);
+}
+
+.progress-circle .percentage {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 1.5em;
+    font-weight: bold;
+}
+
+.evaluation-section {
+    border-left: 4px solid #007bff;
+    padding-left: 15px;
+    margin-bottom: 20px;
+}
+
+.tech-badge {
+    display: inline-block;
+    padding: 5px 10px;
+    margin: 5px;
+    border-radius: 5px;
+    font-size: 0.9em;
+}
+</style>
 
 <script>
 function showDetails(projectId) {
@@ -86,69 +135,191 @@ function showDetails(projectId) {
             if (data.error) {
                 html = `<div class="alert alert-danger">Error: ${data.error}</div>`;
             } else {
-                // Show score breakdown
-                html += '<div class="mb-4">';
-                html += '<h6>Score Breakdown:</h6>';
-                html += '<div class="row">';
+                // Project Summary Header
+                html += `
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <h3 class="text-primary">${data.project_name || 'Project'}</h3>
+                                    <p class="text-muted">${data.project_track || 'General Track'}</p>
+                                    <div class="d-flex justify-content-center gap-3">
+                                        ${data.github_link ? `<a href="${data.github_link}" target="_blank" class="btn btn-sm btn-outline-dark"><i class="bi bi-github me-1"></i>GitHub</a>` : ''}
+                                        ${data.demo_link ? `<a href="${data.demo_link}" target="_blank" class="btn btn-sm btn-outline-primary"><i class="bi bi-play-circle me-1"></i>Demo</a>` : ''}
+                                        ${data.deployed_link ? `<a href="${data.deployed_link}" target="_blank" class="btn btn-sm btn-outline-success"><i class="bi bi-globe me-1"></i>Live</a>` : ''}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                // Score Breakdown with Circular Progress
+                html += '<div class="row mb-4">';
+                html += '<div class="col-12"><h5 class="mb-3">Score Breakdown</h5></div>';
                 
                 if (data.scores) {
                     const criteria = [
-                        {key: 'code_quality', name: 'Code Quality', max: 25},
-                        {key: 'timeline', name: 'Timeline Compliance', max: 15},
-                        {key: 'deployment', name: 'Deployment', max: 15},
-                        {key: 'innovation', name: 'Innovation', max: 25},
-                        {key: 'demo', name: 'Demo Quality', max: 20}
+                        {key: 'code_quality', name: 'Code Quality', max: 25, color: '#28a745', icon: 'bi-code-slash'},
+                        {key: 'timeline', name: 'Timeline Compliance', max: 15, color: '#17a2b8', icon: 'bi-clock'},
+                        {key: 'deployment', name: 'Deployment', max: 15, color: '#ffc107', icon: 'bi-cloud-upload'},
+                        {key: 'innovation', name: 'Innovation', max: 25, color: '#fd7e14', icon: 'bi-lightbulb'},
+                        {key: 'demo', name: 'Demo Quality', max: 20, color: '#6f42c1', icon: 'bi-camera-video'}
                     ];
                     
                     criteria.forEach(c => {
-                        if (data.scores[c.key] !== undefined) {
-                            html += `
-                                <div class="col-md-4 mb-3">
-                                    <div class="card">
-                                        <div class="card-body text-center">
-                                            <h6>${c.name}</h6>
-                                            <h4>${data.scores[c.key]}/${c.max}</h4>
-                                            <div class="progress">
-                                                <div class="progress-bar" style="width: ${(data.scores[c.key]/c.max)*100}%"></div>
+                        const score = data.scores[c.key] || 0;
+                        const percentage = Math.round((score / c.max) * 100);
+                        const circumference = 2 * Math.PI * 45;
+                        const strokeDashoffset = circumference - (percentage / 100) * circumference;
+                        
+                        html += `
+                            <div class="col-md-4 mb-4">
+                                <div class="card h-100 criteria-card shadow-sm">
+                                    <div class="card-body text-center">
+                                        <div class="mb-3">
+                                            <i class="${c.icon} text-${c.color.replace('#', '')} fs-3"></i>
+                                        </div>
+                                        <h6 class="card-title">${c.name}</h6>
+                                        <div class="progress-circle">
+                                            <svg width="120" height="120">
+                                                <circle cx="60" cy="60" r="45" fill="none" stroke="#e0e0e0" stroke-width="8"></circle>
+                                                <circle cx="60" cy="60" r="45" fill="none" stroke="${c.color}" stroke-width="8" 
+                                                        stroke-dasharray="${circumference}" stroke-dashoffset="${strokeDashoffset}" 
+                                                        stroke-linecap="round"></circle>
+                                            </svg>
+                                            <div class="percentage" style="color: ${c.color}">
+                                                ${score}/${c.max}
                                             </div>
                                         </div>
+                                        <div class="mt-2 text-muted small">${percentage}%</div>
                                     </div>
                                 </div>
-                            `;
-                        }
+                            </div>
+                        `;
                     });
                 }
                 
-                html += '</div></div>';
+                html += '</div>';
                 
-                // Show GitHub info if available
+                // GitHub Analysis
                 if (data.github_info) {
-                    html += '<div class="mb-4">';
-                    html += '<h6>GitHub Analysis:</h6>';
-                    html += '<ul class="list-group">';
-                    html += `<li class="list-group-item d-flex justify-content-between align-items-center">
-                        Language
-                        <span class="badge bg-primary rounded-pill">${data.github_info.language || 'N/A'}</span>
-                    </li>`;
-                    html += `<li class="list-group-item d-flex justify-content-between align-items-center">
-                        Recent Commits (during hackathon)
-                        <span class="badge bg-success rounded-pill">${data.github_info.recent_commits || 0}</span>
-                    </li>`;
-                    html += `<li class="list-group-item d-flex justify-content-between align-items-center">
-                        README
-                        <span class="badge bg-${data.github_info.has_readme ? 'success' : 'danger'} rounded-pill">${data.github_info.has_readme ? 'Yes' : 'No'}</span>
-                    </li>`;
-                    html += '</ul>';
-                    html += '</div>';
+                    html += `
+                        <div class="evaluation-section">
+                            <h5 class="mb-3"><i class="bi bi-github me-2"></i>GitHub Analysis</h5>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="card mb-3">
+                                        <div class="card-body">
+                                            <h6>Repository Metrics</h6>
+                                            <ul class="list-unstyled mb-0">
+                                                <li><strong>Language:</strong> <span class="tech-badge bg-light">${data.github_info.language || 'N/A'}</span></li>
+                                                <li><strong>Stars:</strong> ${data.github_info.stars || 0}</li>
+                                                <li><strong>Forks:</strong> ${data.github_info.forks || 0}</li>
+                                                <li><strong>Last Push:</strong> ${data.github_info.last_pushed || 'N/A'}</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="card mb-3">
+                                        <div class="card-body">
+                                            <h6>Code Quality Indicators</h6>
+                                            <ul class="list-unstyled mb-0">
+                                                <li><strong>Recent Commits:</strong> <span class="badge bg-${data.github_info.recent_commits > 0 ? 'success' : 'danger'}">${data.github_info.recent_commits || 0}</span></li>
+                                                <li><strong>README:</strong> <span class="badge bg-${data.github_info.has_readme ? 'success' : 'danger'}">${data.github_info.has_readme ? 'Yes' : 'No'}</span></li>
+                                                <li><strong>File Count:</strong> ${data.github_info.file_count || 0}</li>
+                                                <li><strong>Created:</strong> ${data.github_info.created_at || 'N/A'}</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
                 }
                 
-                // Show full evaluation
+                // Detailed AI Evaluation
                 if (data.full_evaluation) {
-                    html += '<div class="mb-4">';
-                    html += '<h6>Detailed Evaluation:</h6>';
-                    html += `<div class="alert alert-light">${data.full_evaluation.replace(/\n/g, '<br>')}</div>`;
-                    html += '</div>';
+                    html += `
+                        <div class="evaluation-section">
+                            <h5 class="mb-3"><i class="bi bi-robot me-2"></i>Detailed AI Evaluation</h5>
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <pre class="mb-0" style="white-space: pre-wrap; font-family: inherit;">${data.full_evaluation}</pre>
+                                </div>
+                            </div>
+                        </div>
+                    `;
                 }
+                
+                // Add criteria explanation
+                html += `
+                    <div class="evaluation-section">
+                        <h5 class="mb-3"><i class="bi bi-list-check me-2"></i>Evaluation Criteria</h5>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h6 class="text-success">Code Quality (25 points)</h6>
+                                        <ul class="small text-muted">
+                                            <li>Code structure and organization</li>
+                                            <li>Best practices and patterns</li>
+                                            <li>Documentation quality</li>
+                                            <li>Technical implementation</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h6 class="text-info">Timeline Compliance (15 points)</h6>
+                                        <ul class="small text-muted">
+                                            <li>Recent commits during hackathon</li>
+                                            <li>Evidence of 24-hour development</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mt-3">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h6 class="text-warning">Deployment (15 points)</h6>
+                                        <ul class="small text-muted">
+                                            <li>Working deployment</li>
+                                            <li>Accessibility and stability</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mt-3">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h6 class="text-orange">Innovation (25 points)</h6>
+                                        <ul class="small text-muted">
+                                            <li>Novel approaches</li>
+                                            <li>Technical complexity</li>
+                                            <li>Problem-solving creativity</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mt-3">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h6 class="text-purple">Demo Quality (20 points)</h6>
+                                        <ul class="small text-muted">
+                                            <li>Video quality and clarity</li>
+                                            <li>Feature demonstration</li>
+                                            <li>Overall presentation</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
             }
             
             document.getElementById('modalBody').innerHTML = html;
