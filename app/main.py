@@ -195,8 +195,7 @@ def create_consistent_prompt(project, github_info, task_description):
     project_data = f"{project.name}-{project.github_link}-{project.video_link}-{project.deployed_link}"
     data_hash = hashlib.md5(project_data.encode()).hexdigest()[:8]
     
-    return f"""
-[EVALUATION_SESSION_ID: {data_hash}]
+    return f"""[EVALUATION_SESSION_ID: {data_hash}]
 
 Evaluate this hackathon project with complete objectivity and consistency:
 
